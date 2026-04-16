@@ -1,0 +1,6 @@
+@ZatcaInvoicingApp_HostAddress = http://localhost:5207
+
+GET {{ZatcaInvoicingApp_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
