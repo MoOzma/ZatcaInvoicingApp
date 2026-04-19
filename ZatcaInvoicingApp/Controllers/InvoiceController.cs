@@ -134,4 +134,36 @@ public class InvoiceController : ControllerBase
     }
 
 
+    [HttpGet("validate-chain")]
+    public async Task<IActionResult> ValidateInvoicesChain()
+    {
+        var invoices = await _context.Invoices.OrderBy(i => i.InvoiceID).ToListAsync();
+        var report = new List<string>();
+
+        // هذا المتغير سيحمل الهاش الخاص بالفاتورة السابقة في كل لفة
+        string lastSeenHash = "0";
+
+        foreach (var inv in invoices)
+        {
+            // 1. التحقق من الربط بالسلسلة
+            // لو دي أول فاتورة (Previous == "0") والـ lastSeenHash لسه "0"، هنعديها
+            if (inv.PreviousInvoiceHash != lastSeenHash)
+            {
+                return BadRequest($"الفاتورة رقم {inv.InvoiceNumber} لا ترتبط بالتي قبلها. المتوقع: {lastSeenHash} لكن الوجد: {inv.PreviousInvoiceHash}");
+            }
+
+            // 2. التحقق من سلامة بيانات الفاتورة نفسها (التلاعب الداخلي)
+            string recalculatedHash = GenerateInvoiceHash(inv);
+            if (inv.CurrentHash != recalculatedHash)
+            {
+                return BadRequest($"تنبيه! بيانات الفاتورة {inv.InvoiceNumber} تم تعديلها يدوياً والهاش لم يعد متطابقاً.");
+            }
+
+            // تحديث الهاش "الأخير" ليكون هو الهاش الحالي للفاتورة دي، عشان الفاتورة اللي بعدها تقارن بيه
+            lastSeenHash = inv.CurrentHash;
+            report.Add($"الفاتورة {inv.InvoiceNumber}: سليمة وموثقة ✅");
+        }
+
+        return Ok(new { Status = "Chain is secure", TotalChecked = invoices.Count, Details = report });
+    } 
 }
