@@ -119,7 +119,12 @@ public class InvoiceController : ControllerBase
 
         return Convert.ToBase64String(fullQrBuffer.ToArray());
     }
-
+    /// <summary>
+    /// kll
+    /// </summary>
+    /// <param name="tag"></param>
+    /// <param name="value"></param>
+    /// <returns></returns>
     private byte[] GetTlv(int tag, string value)
     {
         byte[] tagBuf = { (byte)tag };
