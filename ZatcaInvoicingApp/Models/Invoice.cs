@@ -24,4 +24,5 @@ public class Invoice
 
     // علاقة مع تفاصيل الفاتورة
     public List<InvoiceDetail> Details { get; set; } = new();
+    public bool IsDeleted { get; set; } = false;
 }
