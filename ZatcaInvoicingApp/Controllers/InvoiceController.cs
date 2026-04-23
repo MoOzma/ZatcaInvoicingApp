@@ -83,20 +83,24 @@ public class InvoiceController : ControllerBase
 
 
 
-    // أضف هذه الميثود في أسفل الكلاس
     private string GenerateInvoiceHash(Invoice invoice)
-{
-    // بنجمع الداتا اللي عايزين نحميها من التلاعب
-    // الترتيب والبيانات دي مهمة جداً لـ ZATCA
-    string rawData = $"{invoice.InvoiceNumber}|{invoice.IssueDate:yyyy-MM-ddTHH:mm:ss}|" +
-                     $"{invoice.TotalIncludingVAT}|{invoice.TotalVAT}|{invoice.PreviousInvoiceHash}";
-
-    using (SHA256 sha256 = SHA256.Create())
     {
-        byte[] bytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(rawData));
-        return Convert.ToBase64String(bytes);
+        // 1. توحيد تنسيق التاريخ (بدون أجزاء من الثانية)
+        string formattedDate = invoice.IssueDate.ToString("yyyy-MM-ddTHH:mm:ss");
+
+        // 2. توحيد الأرقام العشرية (رقمين بعد العلامة دائماً)
+        string totalStr = invoice.TotalIncludingVAT.ToString("F2");
+        string vatStr = invoice.TotalVAT.ToString("F2");
+
+        // 3. تجميع السلسلة النصية بنفس الترتيب
+        string rawData = $"{invoice.InvoiceNumber}|{formattedDate}|{totalStr}|{vatStr}|{invoice.PreviousInvoiceHash}";
+
+        using (SHA256 sha256 = SHA256.Create())
+        {
+            byte[] bytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(rawData));
+            return Convert.ToBase64String(bytes);
+        }
     }
-}
 
     private string GenerateZatcaQrCode(Invoice invoice)
     {
@@ -119,12 +123,7 @@ public class InvoiceController : ControllerBase
 
         return Convert.ToBase64String(fullQrBuffer.ToArray());
     }
-    /// <summary>
-    /// kll
-    /// </summary>
-    /// <param name="tag"></param>
-    /// <param name="value"></param>
-    /// <returns></returns>
+   
     private byte[] GetTlv(int tag, string value)
     {
         byte[] tagBuf = { (byte)tag };
@@ -139,36 +138,5 @@ public class InvoiceController : ControllerBase
     }
 
 
-    [HttpGet("validate-chain")]
-    public async Task<IActionResult> ValidateInvoicesChain()
-    {
-        var invoices = await _context.Invoices.OrderBy(i => i.InvoiceID).ToListAsync();
-        var report = new List<string>();
-
-        // هذا المتغير سيحمل الهاش الخاص بالفاتورة السابقة في كل لفة
-        string lastSeenHash = "0";
-
-        foreach (var inv in invoices)
-        {
-            // 1. التحقق من الربط بالسلسلة
-            // لو دي أول فاتورة (Previous == "0") والـ lastSeenHash لسه "0"، هنعديها
-            if (inv.PreviousInvoiceHash != lastSeenHash)
-            {
-                return BadRequest($"الفاتورة رقم {inv.InvoiceNumber} لا ترتبط بالتي قبلها. المتوقع: {lastSeenHash} لكن الوجد: {inv.PreviousInvoiceHash}");
-            }
-
-            // 2. التحقق من سلامة بيانات الفاتورة نفسها (التلاعب الداخلي)
-            string recalculatedHash = GenerateInvoiceHash(inv);
-            if (inv.CurrentHash != recalculatedHash)
-            {
-                return BadRequest($"تنبيه! بيانات الفاتورة {inv.InvoiceNumber} تم تعديلها يدوياً والهاش لم يعد متطابقاً.");
-            }
-
-            // تحديث الهاش "الأخير" ليكون هو الهاش الحالي للفاتورة دي، عشان الفاتورة اللي بعدها تقارن بيه
-            lastSeenHash = inv.CurrentHash;
-            report.Add($"الفاتورة {inv.InvoiceNumber}: سليمة وموثقة ✅");
-        }
-
-        return Ok(new { Status = "Chain is secure", TotalChecked = invoices.Count, Details = report });
-    } 
+    
 }
