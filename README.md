@@ -49,4 +49,4 @@ A production-ready **ASP.NET Core** Web API implementation that fulfills the tec
 
 1. **Clone the Repository**:
    ```bash
-   git clone [https://github.com/your-username/ZatcaInvoicingApp.git](https://github.com/your-username/ZatcaInvoicingApp.git)
+   git clone [https://github.com/MoOzma/ZatcaInvoicingApp.git](https://github.com/MoOzma/ZatcaInvoicingApp.git)
