@@ -20,4 +20,3 @@ namespace ZatcaInvoicingApp.Migrations
         }
     }
 }
-/////تلانت
