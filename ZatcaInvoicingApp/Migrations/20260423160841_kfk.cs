@@ -20,4 +20,4 @@ namespace ZatcaInvoicingApp.Migrations
         }
     }
 }
-//t RTHBNFG
+//t RTHBNFGerdfgvb
